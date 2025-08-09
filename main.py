@@ -77,7 +77,7 @@ def streamlit_ui():
 
     elif choice == 'RAG_Ranking':
         with header:
-            st.title('RAG with cohere ranking')
+            st.title('RAG with Cohere Ranking')
             st.write("""Improved RAG retrieval process with cohere ranking""")
             RAG_with_ranking()
     
@@ -268,9 +268,25 @@ def RAG_with_ranking():
                                          model_kwargs={'device':'cpu'})
     db = FAISS.from_documents(text,embedding)
     db.save_local(DB_FAISS_PATH)
-    retriever = db.as_retriever(search_kwards = {"k":20})
+    retriever = db.as_retriever(search_kwargs={"k":20})
 
-    compressor = CohereRerank()
+    # Fix: Specify the correct Cohere rerank model
+    try:
+        compressor = CohereRerank(model="rerank-english-v3.0")
+    except Exception as e:
+        st.warning(f"Cohere rerank model not available: {e}")
+        st.info("Falling back to basic retriever without reranking")
+        # Fallback to basic retriever without reranking
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=retriever
+        )
+        
+        if prompt := st.chat_input("Ask a question"):
+            response = qa_chain({"query": prompt})
+            st.write(response)
+        return
     compressor_retriever = ContextualCompressionRetriever(
         base_compressor=compressor,
         base_retriever=retriever
@@ -283,10 +299,14 @@ def RAG_with_ranking():
     )
 
     if prompt := st.chat_input("Ask a question"):
-        response = qa_chain(prompt)
+        response = qa_chain({"query": prompt})
         st.write(response)
-        compressor_docs = compressor_retriever.get_relevant_documents(prompt)
-        st.write(compressor_docs)
+        try:
+            compressor_docs = compressor_retriever.get_relevant_documents(prompt)
+            st.write("Retrieved documents:")
+            st.write(compressor_docs)
+        except Exception as e:
+            st.error(f"Error retrieving documents: {e}")
 
 
 def show_graph():

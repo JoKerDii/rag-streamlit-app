@@ -159,7 +159,7 @@ class RAG_Graph:
         {context}
         
         Question: {question}
-        User natrual language and be concise.
+        User natural language and be concise.
         Answer: """
 
         prompt = ChatPromptTemplate.from_template(template)
