@@ -186,6 +186,6 @@ week4/simple
 .virtual_documents/
 WingIDE_Projekti/
 nohup.out
-*.png
+# *.png
 
 scraper_cache/
